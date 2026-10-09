@@ -74,7 +74,7 @@ After exporting a complete runtime, use Python 3.10 or newer to create a bundle.
 ```sh
 python3 scripts/package-release.py \
   --rootfs dist/runtime/arm64/rootfs --arch arm64 \
-  --version 0.0.1-rc.2 --revision "$(git rev-parse HEAD)" --output dist/release
+  --version 0.0.1-rc.3 --revision "$(git rev-parse HEAD)" --output dist/release
 python3 tests/release_package.py
 ```
 
@@ -102,16 +102,16 @@ python3 tests/macos_package.py
 python3 scripts/package-macos.py \
   --binary "$workspace/target/release/curl-impersonate" \
   --native-prefix "$workspace/native" \
-  --version 0.0.1-rc.2 --revision "$(git rev-parse HEAD)" --output dist/release
+  --version 0.0.1-rc.3 --revision "$(git rev-parse HEAD)" --output dist/release
 
 # Run the extracted download, including mandatory HTTP2 tests.
-bundle=curl-impersonate-0.0.1-rc.2-macos-arm64
+bundle=curl-impersonate-0.0.1-rc.3-macos-arm64
 tar -xzf "dist/release/$bundle.tar.gz" -C dist/release
 export CLI="$PWD/dist/release/$bundle/curl-impersonate"
 export PATH="$(brew --prefix openssl@3)/bin:$(brew --prefix nghttp2)/bin:$PATH"
 REQUIRE_HTTP2=1 python3 tests/compat.py
 python3 tests/release_tls.py
-"$CLI" --impersonate chrome150 --compressed -sS --fail \
+"$CLI" --compressed -sS --fail \
   --connect-timeout 10 --max-time 30 -o /dev/null https://httpbin.org/status/200
 ```
 
@@ -141,7 +141,7 @@ Source builds download pinned dependency archives and use container registries a
 
 ### Validation scope
 
-`test-minimal` runs source integrity checks, parser tests, and local HTTP/TLS/HTTP2 integration tests, then repeats the integration tests inside the assembled runtime filesystem with `chroot`. Test tools stay outside the final image. The suite checks all 39 profile names against the compiled engine. It does not compare browser fingerprints or establish HTTP/3 fidelity. Compatibility assertions use local fixtures; the download workflow also runs one bounded public HTTPS smoke check.
+`test-minimal` runs source integrity checks, parser tests, and local HTTP/TLS/HTTP2 integration tests, then repeats the integration tests inside the assembled runtime filesystem with `chroot`. Test tools stay outside the final image. The suite checks all 39 profile names against the compiled engine, the default Chrome profile, explicit/environment precedence, and `--no-impersonate`. Curl-default comparisons explicitly disable impersonation; default-browser requests are checked separately, including HTTP2. It does not compare browser fingerprints or establish HTTP/3 fidelity. Compatibility assertions use local fixtures; the download workflow also runs one bounded public HTTPS smoke check.
 
 ## Validate your change
 

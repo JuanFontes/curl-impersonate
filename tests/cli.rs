@@ -61,6 +61,7 @@ fn unsupported_or_incomplete_invocations_fail_before_transfer() {
         vec!["--max-time", "NaN", "https://httpbin.org/get"],
         vec!["--max-time", "-1", "https://httpbin.org/get"],
         vec!["--silent=yes", "https://httpbin.org/get"],
+        vec!["--no-impersonate=yes", "https://httpbin.org/get"],
     ] {
         assert_eq!(
             parse(args.into_iter().map(String::from).collect())

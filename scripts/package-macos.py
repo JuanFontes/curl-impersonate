@@ -111,8 +111,12 @@ def package(args):
 
 ```sh
 ./curl-impersonate --version
-./curl-impersonate --impersonate chrome150 --compressed -sS https://httpbin.org/get
+./curl-impersonate --compressed -sS https://httpbin.org/get
 ```
+
+Browser impersonation defaults to chrome150. --impersonate PROFILE selects
+another browser; --no-impersonate disables profiles. Explicit CLI selection wins
+over CURL_IMPERSONATE, then the release default. Use --compressed for decoded bodies.
 
 Keep the entire folder together: the executable loads the engine from lib/.
 No Docker, Homebrew, compiler or global engine installation is needed to run it.

@@ -129,10 +129,7 @@ impl Handle {
             )
         };
         let raw = NonNull::new(raw).ok_or_else(|| {
-            CliError::new(
-                2,
-                "cannot create native handle; check CURL_IMPERSONATE and engine installation",
-            )
+            CliError::new(2, "cannot create native handle; check engine installation")
         })?;
         Ok(Self { raw, output })
     }
@@ -289,8 +286,7 @@ pub fn run(config: &Config) -> Result<(), CliError> {
     if let Some(profile) = &config.impersonate {
         handle.string("impersonate", profile)?;
     }
-    let impersonating =
-        config.impersonate.is_some() || std::env::var_os("CURL_IMPERSONATE").is_some();
+    let impersonating = config.impersonate.is_some();
     if !impersonating {
         handle.string("user_agent", "curl/8.22.0")?;
     }

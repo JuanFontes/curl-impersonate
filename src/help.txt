@@ -1,5 +1,6 @@
 curl-impersonate-rs v0 — Rust CLI using libcurl-impersonate directly
 Usage: curl-impersonate [options] <URL>
+Browser impersonation is enabled by default with chrome150.
 
 Requests:
   -X, --request METHOD          Custom HTTP method
@@ -17,7 +18,8 @@ Requests:
   -c, --cookie-jar FILE         Save cookies
 
 Transport:
-      --impersonate PROFILE    Built-in browser profile; optional :yes or :no
+      --impersonate PROFILE     Select browser profile; optional :yes or :no
+      --no-impersonate          Disable browser profiles, including environment defaults
       --list-profiles          List profiles validated against the loaded engine
   -L, --location               Follow redirects (default limit: 50)
       --max-redirs N           Redirect limit; -1 for unlimited
@@ -51,5 +53,9 @@ Write-out: http_code, response_code, url_effective, content_type,
 
 v0 is a subset of curl: one HTTP(S) URL, no .curlrc/--config/--next,
 URL globbing, multipart, streaming uploads, retry, parallelism or progress meter.
-Unknown flags and write-out variables fail explicitly. Impersonation is opt-in.
+Profile priority: last --impersonate/--no-impersonate flag, CURL_IMPERSONATE,
+then chrome150. The default is pinned to the release, not updated at runtime.
+CURL_IMPERSONATE_HEADERS=no disables headers for an environment/default profile;
+explicit --impersonate uses its :yes/:no suffix (headers enabled if omitted).
+Unknown flags and write-out variables fail explicitly.
 Request bodies are buffered; response bodies stream without text conversion.

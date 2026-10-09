@@ -77,6 +77,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
         elif self.path == "/set-cookie":
             headers.append(("Set-Cookie", "session=hello; Path=/"))
             payload = b"cookie saved"
+        elif self.path == "/profile":
+            payload = json.dumps({name.lower(): value for name, value in self.headers.items()}, sort_keys=True).encode()
         else:
             names = ["Content-Type", "Accept", "X-Test", "Cookie", "Authorization", "Referer"]
             payload = json.dumps({"method": self.command, "path": self.path,
@@ -125,13 +127,16 @@ class Compatibility(unittest.TestCase):
         cls.tls.server_close()
         cls.temp.cleanup()
 
-    def run_cli(self, args, *, engine=CLI, data=None):
+    def run_cli(self, args, *, engine=CLI, data=None, environment=None):
         env = {k: v for k, v in os.environ.items() if k.lower() not in
                {"http_proxy", "https_proxy", "all_proxy", "no_proxy", "curl_impersonate", "curl_impersonate_headers", "curl_ca_bundle", "ssl_cert_file", "ssl_cert_dir"}}
+        env.update(environment or {})
         return subprocess.run([engine, "-q", "-sS", *args], input=data, capture_output=True, env=env, timeout=10)
 
     def compare(self, args, *, data=None):
-        actual = self.run_cli(args, data=data)
+        # Compare curl's generic defaults explicitly; browser defaults have
+        # their own request/header and HTTP2 assertions below.
+        actual = self.run_cli(["--no-impersonate", *args], data=data)
         expected = self.run_cli(args, engine=CURL, data=data)
         self.assertEqual(actual.returncode, expected.returncode, actual.stderr)
         self.assertEqual(actual.stdout, expected.stdout, actual.stderr)
@@ -252,6 +257,69 @@ class Compatibility(unittest.TestCase):
         self.assertNotEqual(invalid.returncode, 0)
         self.assertEqual(invalid.stdout, b"")
 
+    def profile_headers(self, args=(), environment=None):
+        result = self.run_cli([*args, self.url + "/profile"], environment=environment)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return json.loads(result.stdout)
+
+    def test_default_profile_is_chrome_and_preserves_response_bytes(self):
+        headers = self.profile_headers()
+        self.assertIn("Chrome/150.0.0.0", headers.get("user-agent", ""))
+        self.assertIn('"Chromium";v="150"', headers.get("sec-ch-ua", ""))
+        self.assertEqual(self.run_cli([self.url + "/bytes"]).stdout, BINARY)
+        compressed = self.run_cli([self.url + "/gzip"])
+        self.assertEqual(compressed.returncode, 0, compressed.stderr)
+        self.assertEqual(gzip.decompress(compressed.stdout), BINARY)
+        decoded = self.run_cli(["--compressed", self.url + "/gzip"])
+        self.assertEqual(decoded.returncode, 0, decoded.stderr)
+        self.assertEqual(decoded.stdout, BINARY)
+        headers = self.profile_headers(["-H", "Accept: application/json", "-A", "custom-agent"])
+        self.assertEqual(headers["accept"], "application/json")
+        self.assertEqual(headers["user-agent"], "custom-agent")
+
+    def test_profile_flags_override_environment_and_last_selection_wins(self):
+        for environment in [{"CURL_IMPERSONATE": "firefox147"}, {"CURL_IMPERSONATE": "invalid-profile"}]:
+            with self.subTest(environment=environment):
+                headers = self.profile_headers(["--impersonate", "chrome150"], environment)
+                self.assertIn("Chrome/150.0.0.0", headers.get("user-agent", ""))
+                headers = self.profile_headers(["--impersonate", "chrome150", "--no-impersonate"], environment)
+                self.assertTrue(headers.get("user-agent", "").startswith("curl/"))
+                self.assertEqual(headers.get("accept"), "*/*")
+                self.assertNotIn("sec-ch-ua", headers)
+        headers = self.profile_headers(["--no-impersonate", "--impersonate", "firefox147"])
+        self.assertIn("Firefox/147.0", headers.get("user-agent", ""))
+        self.assertNotIn("sec-ch-ua", headers)
+
+    def test_environment_profile_and_header_selection(self):
+        headers = self.profile_headers(environment={"CURL_IMPERSONATE": "firefox147"})
+        self.assertIn("Firefox/147.0", headers.get("user-agent", ""))
+        for environment in [{"CURL_IMPERSONATE_HEADERS": "no"},
+                            {"CURL_IMPERSONATE": "chrome150", "CURL_IMPERSONATE_HEADERS": "no"}]:
+            with self.subTest(environment=environment):
+                headers = self.profile_headers(environment=environment)
+                self.assertNotIn("sec-ch-ua", headers)
+                self.assertNotIn("user-agent", headers)
+                headers = self.profile_headers(["--impersonate", "chrome150:yes"], environment)
+                self.assertIn("Chrome/150.0.0.0", headers.get("user-agent", ""))
+        headers = self.profile_headers(["--impersonate", "chrome150:no"])
+        self.assertNotIn("sec-ch-ua", headers)
+
+    def test_invalid_selected_profile_fails_without_a_request(self):
+        for environment in [{"CURL_IMPERSONATE": "invalid-profile"}, {"CURL_IMPERSONATE": ""}]:
+            with self.subTest(environment=environment):
+                result = self.run_cli([self.url + "/profile"], environment=environment)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, b"")
+        result = self.run_cli(["--impersonate", "invalid-profile", self.url + "/profile"],
+                              environment={"CURL_IMPERSONATE": "chrome150"})
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, b"")
+
+    def test_profile_listing_ignores_request_environment(self):
+        result = self.run_cli(["--list-profiles"], environment={"CURL_IMPERSONATE": "invalid-profile"})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(b"chrome150\n", result.stdout)
+
     def test_catalog_matches_the_native_engine(self):
         result = self.run_cli(["--list-profiles"])
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -284,7 +352,7 @@ class Compatibility(unittest.TestCase):
                         if time.monotonic() >= deadline:
                             self.fail("nghttpd did not start")
                         time.sleep(0.02)
-                result = self.run_cli(["--impersonate", "chrome150", "--cacert", str(self.cert), "--http2", "-w", "%{http_version}", f"https://127.0.0.1:{port}/resource.bin"])
+                result = self.run_cli(["--cacert", str(self.cert), "--http2", "-w", "%{http_version}", f"https://127.0.0.1:{port}/resource.bin"])
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(result.stdout, BINARY + b"2")
             finally:

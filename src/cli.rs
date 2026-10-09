@@ -1,3 +1,5 @@
+pub const DEFAULT_PROFILE: &str = "chrome150";
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum DataKind {
     Form,
@@ -45,6 +47,7 @@ pub struct Config {
     pub cookies: Vec<String>,
     pub cookie_jar: Option<String>,
     pub impersonate: Option<String>,
+    pub no_impersonate: bool,
     pub http_version: Option<i64>,
     pub write_out: Option<String>,
 }
@@ -221,7 +224,14 @@ fn apply(c: &mut Config, name: &str, value: Option<String>) -> Result<Option<Act
         "noproxy" => c.no_proxy = Some(v),
         "cookie" => c.cookies.push(v),
         "cookie-jar" => c.cookie_jar = Some(v),
-        "impersonate" => c.impersonate = Some(v),
+        "impersonate" => {
+            c.impersonate = Some(v);
+            c.no_impersonate = false;
+        }
+        "no-impersonate" => {
+            c.impersonate = None;
+            c.no_impersonate = true;
+        }
         "http1.0" => c.http_version = Some(0),
         "http1.1" => c.http_version = Some(1),
         "http2" => c.http_version = Some(2),
