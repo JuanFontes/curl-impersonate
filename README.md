@@ -2,7 +2,7 @@
 
 <h1>🦎 curl-impersonate-rs</h1>
 
-<p><strong>Browser profiles. curl-style commands. Ready-to-run Docker.</strong></p>
+<p><strong>Browser profiles. curl-style commands. Docker and Linux downloads.</strong></p>
 
 <p>Explore HTTP responses with browser-specific TLS and HTTP settings,<br>right from your terminal and scripts.</p>
 
@@ -22,6 +22,7 @@
 
 <p>
   <a href="#use-the-published-docker-image">🚀 Quick start</a> ·
+  <a href="#linux-downloads">📦 Linux downloads</a> ·
   <a href="#browser-profiles">🌐 Profiles</a> ·
   <a href="#http-examples">🧰 Examples</a> ·
   <a href="#current-compatibility">🧭 Compatibility</a> ·
@@ -59,6 +60,39 @@ docker run --rm juanfontes/curl-impersonate:0.0.1-rc.1 --list-profiles
 ```
 
 The image includes the CLI, native engine, shared libraries, and CA certificates. The [HTTP examples](#http-examples) below all use this published image, including headers, body output, authentication, redirects, and saving files.
+
+<a id="linux-downloads"></a>
+
+## 📦 Linux downloads — no Docker required
+
+Download a bundle from [GitHub Releases](https://github.com/JuanFontes/curl-impersonate/releases/tag/v0.0.1-rc.1):
+
+| Your Linux CPU (`uname -m`) | Package |
+| --- | --- |
+| `x86_64` | `curl-impersonate-0.0.1-rc.1-linux-amd64.tar.gz` |
+| `aarch64` | `curl-impersonate-0.0.1-rc.1-linux-arm64.tar.gz` |
+
+Each archive includes the CLI, native engine, glibc loader, shared libraries, CA certificates, and licenses. **Extract the entire folder and keep it together.** The top-level `curl-impersonate` launcher locates its bundled runtime; copying just the inner ELF executable will not work as a standalone installation.
+
+Download your archive and `SHA256SUMS` from the release page, then run the following in the download directory. Use `arch=arm64` on an ARM64 Linux machine:
+
+```sh
+set -e
+arch=amd64
+bundle="curl-impersonate-0.0.1-rc.1-linux-$arch"
+sha256sum --check --ignore-missing SHA256SUMS
+tar -xzf "$bundle.tar.gz"
+"./$bundle/curl-impersonate" --version
+"./$bundle/curl-impersonate" --impersonate firefox147 --compressed -sS https://httpbin.org/get
+```
+
+Downloads follow the GitHub repository's visibility; private repositories require authenticated access. Checksums detect corrupted downloads; these assets are not yet signed.
+
+No compiler, Docker daemon, or root access is required to run the bundle. It needs Linux, `/bin/sh`, and standard utilities including `readlink -f`. Native CI tests Ubuntu 24.04 on both architectures. These are bundles of dynamic libraries, not universal static binaries; macOS and Windows native packages are not available yet. Paths with spaces are supported; package paths containing `:` or `;` are not.
+
+For an optional PATH installation, move the complete folder to a permanent location and symlink its launcher into `~/.local/bin`. Keep the runtime beside the launcher. Bundled certificates are the default; `--cacert`, `CURL_CA_BUNDLE`, `SSL_CERT_FILE`, and `SSL_CERT_DIR` allow custom trust settings. Update the bundle to refresh its libraries and certificates.
+
+The same [profiles](#browser-profiles), flags, and [compatibility limits](#current-compatibility) apply to Docker and Linux bundles. For the Docker examples below, replace `docker run --rm juanfontes/curl-impersonate:0.0.1-rc.1` with the path to your launcher.
 
 <a id="browser-profiles"></a>
 
@@ -304,7 +338,7 @@ The next milestones focus on measurable fidelity and easier maintenance:
 
 - [ ] Compare network captures with real browsers.
 - [ ] Automate tested releases for amd64 and arm64.
-- [ ] Publish standalone CLI artifacts.
+- [x] Publish Linux CLI bundles with checksums for amd64 and arm64.
 - [ ] Update browser catalogs and dependencies together.
 - [ ] Expand curl compatibility using representative scripts.
 - [ ] Validate HTTP/3 end to end.
@@ -313,6 +347,6 @@ The next milestones focus on measurable fidelity and easier maintenance:
 
 ## 📄 License
 
-Original code is MIT licensed under [LICENSE](LICENSE). [NOTICE](NOTICE) describes the incorporated components; the engine's original license remains in [vendor/curl-impersonate/LICENSE](vendor/curl-impersonate/LICENSE). Docker includes the collected native dependency notices at `/usr/share/licenses/curl-impersonate-rs/native/`. This is an independent project, not an official curl or upstream curl-impersonate release.
+Original code is MIT licensed under [LICENSE](LICENSE). [NOTICE](NOTICE) describes the incorporated components; the engine's original license remains in [vendor/curl-impersonate/LICENSE](vendor/curl-impersonate/LICENSE). Docker includes the collected native dependency notices at `/usr/share/licenses/curl-impersonate-rs/native/`. Linux bundles retain the same notices under `runtime/`. This is an independent project, not an official curl or upstream curl-impersonate release.
 
 <p align="center"><a href="#use-the-published-docker-image">↑ Back to quick start</a></p>

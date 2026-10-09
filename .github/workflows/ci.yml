@@ -1,5 +1,7 @@
 name: Build and package runtime
 on: [push, pull_request, workflow_dispatch]
+env:
+  RELEASE_VERSION: 0.0.1-rc.1
 permissions:
   contents: read
 jobs:
@@ -19,6 +21,8 @@ jobs:
     # Use the daemon builder so the distribution build can resolve the local runtime image.
     steps:
       - uses: actions/checkout@v4
+      - name: Test release packager
+        run: python3 tests/release_package.py
       - name: Test source engine and runtime filesystem
         run: docker build --builder default -f docker/Dockerfile.build --platform ${{ matrix.platform }} --build-arg NATIVE_JOBS=2 --target test-minimal .
       - name: Export runtime artifact
@@ -32,3 +36,32 @@ jobs:
           docker run --rm --network none curl-impersonate-rs:local --version
           docker run --rm --network none curl-impersonate-rs:local --list-profiles
           cat dist/runtime/${{ matrix.arch }}/rootfs/opt/native/engine-build.txt
+      - name: Package Linux CLI and libraries
+        run: |
+          python3 scripts/package-release.py \
+            --rootfs dist/runtime/${{ matrix.arch }}/rootfs --arch ${{ matrix.arch }} \
+            --version "$RELEASE_VERSION" --revision "$GITHUB_SHA" --output dist/release
+      - name: Install native test fixtures
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends python3 openssl curl nghttp2-server
+      - name: Test the extracted bundle directly on the native Linux runner
+        run: |
+          bundle="curl-impersonate-${RELEASE_VERSION}-linux-${{ matrix.arch }}"
+          install_dir="$RUNNER_TEMP/extracted bundle"
+          mkdir -p "$install_dir"
+          tar -xzf "dist/release/$bundle.tar.gz" -C "$install_dir"
+          export CLI="$install_dir/$bundle/curl-impersonate"
+          "$CLI" --version
+          REQUIRE_HTTP2=1 python3 tests/compat.py
+          python3 tests/release_tls.py
+          "$CLI" --impersonate chrome150 --compressed -sS --fail \
+            --connect-timeout 10 --max-time 30 -o /dev/null https://httpbin.org/status/200
+      - name: Upload tested release bundle
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: linux-${{ matrix.arch }}
+          path: dist/release/*.tar.gz
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
