@@ -1,0 +1,16 @@
+[package]
+name = "curl-impersonate-rs"
+version = "0.0.1"
+edition = "2021"
+rust-version = "1.85"
+license = "MIT"
+description = "A Rust curl-style CLI backed by libcurl-impersonate"
+
+[[bin]]
+name = "curl-impersonate"
+path = "src/main.rs"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
