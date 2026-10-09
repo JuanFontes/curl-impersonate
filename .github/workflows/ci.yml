@@ -1,5 +1,10 @@
 name: Build and package runtime
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+  workflow_dispatch:
 env:
   RELEASE_VERSION: 0.0.1-rc.1
 permissions:
