@@ -59,14 +59,14 @@ The same tag includes **Linux amd64 and arm64**; Docker selects the matching arc
 Create an alias in Bash or Zsh to use the published image without typing the Docker command each time:
 
 ```sh
-alias curli='docker run --rm -i juanfontes/curl-impersonate:0.1.0'
+alias curli='docker run --rm -i juanfontes/curl-impersonate:0.1.0 --compressed'
 ```
 
 Then put your curl-style options and URL after `curli`:
 
 ```sh
 # Get the response body with the default Chrome profile.
-curli --compressed -sS https://httpbin.org/get
+curli -sS https://httpbin.org/get
 
 # Select Firefox and request only response headers.
 curli --impersonate firefox147 -sS -I https://httpbin.org/get
@@ -78,7 +78,7 @@ curli -sS -o /dev/null -w '%{http_code}\n' https://httpbin.org/status/200
 curli --list-profiles
 ```
 
-Docker's `-i` forwards stdin, so piped input works too.
+The alias includes `--compressed` to decode compressed HTTP responses requested by browser profiles. Override it with `--no-compressed` when you need the encoded response bytes. Docker's `-i` forwards stdin, so piped input works too.
 
 To keep the shortcut across terminal sessions, add the `alias` line to `~/.zshrc` for Zsh (the default shell on macOS) or `~/.bashrc` for Bash, then open a new terminal. For Bash login shells, ensure `~/.bash_profile` sources `~/.bashrc`. This alias is intended for interactive terminals; use the full Docker command in scripts.
 
