@@ -69,14 +69,16 @@ Engine exports target Linux glibc on Debian bookworm and are not universal Linux
 
 ### Package a Linux download
 
-After exporting a complete runtime, use Python 3.10 or newer to create a bundle. Match `--arch` to the exported architecture and use the release channel version, which can differ from the CLI version in `Cargo.toml`:
+After exporting a complete runtime, use Python 3.11 or newer to create a bundle. Match `--arch` to the exported architecture. The archive version defaults to `package.version` in `Cargo.toml`, the same source used by the CLI and CI:
 
 ```sh
 python3 scripts/package-release.py \
   --rootfs dist/runtime/arm64/rootfs --arch arm64 \
-  --version 0.0.1-rc.3 --revision "$(git rev-parse HEAD)" --output dist/release
+  --revision "$(git rev-parse HEAD)" --output dist/release
 python3 tests/release_package.py
 ```
+
+An explicit `--version` override remains available for packaging experiments; official releases use the manifest version. CI checks that the extracted CLI reports that same version.
 
 The packager checks key ELF architectures, required runtime files and license notices, converts rootfs-absolute links to relative links, and rejects dangling or escaping links. It refuses to overwrite an archive. Archive timestamps and ownership are normalized; this does not make the underlying source build reproducible. `release.json` records the supplied source revision, so build from a clean checkout of that revision.
 
@@ -102,10 +104,10 @@ python3 tests/macos_package.py
 python3 scripts/package-macos.py \
   --binary "$workspace/target/release/curl-impersonate" \
   --native-prefix "$workspace/native" \
-  --version 0.0.1-rc.3 --revision "$(git rev-parse HEAD)" --output dist/release
+  --revision "$(git rev-parse HEAD)" --output dist/release
 
 # Run the extracted download, including mandatory HTTP2 tests.
-bundle=curl-impersonate-0.0.1-rc.3-macos-arm64
+bundle="curl-impersonate-$(python3 scripts/release_version.py)-macos-arm64"
 tar -xzf "dist/release/$bundle.tar.gz" -C dist/release
 export CLI="$PWD/dist/release/$bundle/curl-impersonate"
 export PATH="$(brew --prefix openssl@3)/bin:$(brew --prefix nghttp2)/bin:$PATH"
@@ -121,11 +123,12 @@ The packager requires thin ARM64 Mach-O inputs and rejects non-system dependenci
 
 ### Publish a release
 
-1. Set `RELEASE_VERSION` in `.github/workflows/ci.yml` and update download documentation for the intended version. Select the Docker tag/digest deliberately. Commit the source and run CI on that exact revision.
+1. Set `package.version` in `Cargo.toml` and update `Cargo.lock`. CI and both packagers read that version through `scripts/release_version.py`; no separate CI version constant is needed. Update the README, changelog, and `docker/README.md` for the intended release. Select the Docker tag/digest deliberately. Commit the source and run CI on that exact revision.
 2. Require successful Linux amd64, Linux arm64, and macOS Apple Silicon jobs. Linux jobs build and test the minimal runtime and packager; macOS builds the engine and CLI and tests real Mach-O packaging. All three extract the archive into a path with spaces and run HTTP/TLS/HTTP2 compatibility and certificate tests directly on the native runner. Each also runs a bounded public HTTPS smoke check; public-service failures can require a rerun.
 3. Download the `linux-amd64`, `linux-arm64`, and `macos-arm64` artifacts from that run. Check each archive's `release.json` against the tested revision, platform, and release version. Preserve the tested `.tar.gz` bytes.
 4. Generate `SHA256SUMS` over all three archives, tag the exact tested commit, and upload the archives and checksum file to a draft release. Download them again and verify the checksums before publishing. Mark release candidates as pre-releases.
-5. Include installation instructions, validation scope, macOS signing/notarization status, known limits, and the Docker image tag/digest in the release notes. Do not replace an existing release's assets or Docker tag silently.
+5. Include installation instructions, validation scope, macOS signing/notarization status, known limits, and the Docker image tag/digest in the release notes. Publish final versions as normal releases and update Docker `latest` only after validation. Keep versioned tags and existing assets unchanged.
+6. Publish `docker/README.md` as the Docker Hub overview and verify it against the repository copy. Verify anonymous downloads and image pulls for public releases.
 
 Packaging changes alone do not require rebuilding an unchanged Docker runtime. If a new release tag should refer to that runtime, copy its existing multiarch index with `docker buildx imagetools create --tag IMAGE:NEW_TAG IMAGE@sha256:DIGEST`, then verify the resulting digest and both architectures. State that promotion explicitly in the notes; do not claim that the image was compiled from the new release commit. Native downloads are built by CI from the tagged source. Release publication does not change repository visibility.
 

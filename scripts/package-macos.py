@@ -13,6 +13,8 @@ import sys
 import tarfile
 import tempfile
 
+from release_version import release_version
+
 REPO = Path(__file__).resolve().parents[1]
 
 
@@ -122,7 +124,7 @@ Keep the entire folder together: the executable loads the engine from lib/.
 No Docker, Homebrew, compiler or global engine installation is needed to run it.
 This is a native arm64 package; it does not support Intel Macs or Linux.
 
-This release candidate is signed ad hoc and not notarized. macOS can block
+This experimental macOS package is signed ad hoc and not notarized. macOS can block
 internet downloads. After verifying SHA256SUMS and trusting the release, use
 System Settings > Privacy & Security to approve this specific executable if
 macOS offers Open Anyway. Rebuilding from source is another option.
@@ -132,7 +134,7 @@ in the project README; a deployment target alone is not a compatibility test.
 TLS verification is enabled. The engine uses Apple SecTrust and is configured
 with /etc/ssl/cert.pem. --cacert, CURL_CA_BUNDLE, SSL_CERT_FILE and SSL_CERT_DIR
 support custom trust settings. Profiles and supported options match the Linux
-CLI; use --help and --list-profiles. CLI 0.0.1 accepts one URL and a subset of
+CLI; use --help and --list-profiles. This CLI accepts one URL and a subset of
 curl flags. HTTP/3 and equivalence to real browser fingerprints are unverified.
 
 Notices: LICENSE, NOTICE and licenses/native/. Engine inputs: provenance/.
@@ -160,7 +162,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--binary', type=Path, required=True)
     parser.add_argument('--native-prefix', type=Path, required=True)
-    parser.add_argument('--version', required=True)
+    parser.add_argument('--version', default=release_version(),
+                        help='Archive version (default: package.version from Cargo.toml)')
     parser.add_argument('--revision', required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()

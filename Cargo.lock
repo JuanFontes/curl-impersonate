@@ -4,4 +4,4 @@ version = 4
 
 [[package]]
 name = "curl-impersonate-rs"
-version = "0.0.1"
+version = "0.1.0"

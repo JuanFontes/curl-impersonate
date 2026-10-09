@@ -88,6 +88,23 @@ class ReleasePackage(unittest.TestCase):
         self.assertTrue((bundle / 'runtime/usr/share/licenses/curl-impersonate-rs/NOTICE').is_file())
         self.assertIn('--impersonate', (bundle / 'README.md').read_text())
 
+    def test_default_version_matches_cargo_manifest(self):
+        import tomllib
+        with (REPO / 'Cargo.toml').open('rb') as source:
+            version = tomllib.load(source)['package']['version']
+        result = subprocess.run([sys.executable, str(REPO / 'scripts/package-release.py'),
+                                 '--rootfs', str(self.root), '--arch', self.arch,
+                                 '--revision', REVISION, '--output', str(self.output)],
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        archive = next(self.output.glob('*.tar.gz'))
+        with tarfile.open(archive) as tar:
+            root = tar.getnames()[0]
+            metadata = json.load(tar.extractfile(root + '/release.json'))
+            self.assertEqual(metadata['version'], version)
+            self.assertIn(f'curl-impersonate {version}',
+                          tar.extractfile(root + '/README.md').read().decode())
+
     def test_rejects_wrong_architecture(self):
         result = self.package('--arch', 'amd64' if self.arch == 'arm64' else 'arm64', ok=False)
         self.assertIn(b'architecture', result.stderr.lower())

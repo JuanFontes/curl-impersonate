@@ -11,6 +11,8 @@ import sys
 import tarfile
 import tempfile
 
+from release_version import release_version
+
 ARCHES = {
     'amd64': (62, 'x86_64', 'lib64/ld-linux-x86-64.so.2', 'lib/x86_64-linux-gnu'),
     'arm64': (183, 'aarch64', 'lib/ld-linux-aarch64.so.1', 'lib/aarch64-linux-gnu'),
@@ -143,7 +145,7 @@ SSL_CERT_DIR, or use --cacert, to supply custom trust settings. System network
 configuration (including DNS and proxies) still applies. Refresh the package
 when its libraries or certificates need updating.
 
-CLI 0.0.1 supports a subset of curl flags and one URL per invocation. Use --help
+This CLI supports a subset of curl flags and one URL per invocation. Use --help
 and --list-profiles. Profiles do not establish equivalence to real browsers.
 Full usage and limitations: https://github.com/JuanFontes/curl-impersonate#readme
 
@@ -173,7 +175,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--rootfs', type=Path, required=True)
     parser.add_argument('--arch', choices=ARCHES, required=True)
-    parser.add_argument('--version', required=True)
+    parser.add_argument('--version', default=release_version(),
+                        help='Archive version (default: package.version from Cargo.toml)')
     parser.add_argument('--revision', required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()

@@ -82,6 +82,23 @@ class MacPackage(unittest.TestCase):
         self.assertEqual((bundle / 'licenses/native/LICENSE_CURL').read_text(), 'fixture notice\n')
         self.assertIn('not notarized', (bundle / 'README.md').read_text())
 
+    def test_default_version_matches_cargo_manifest(self):
+        import tomllib
+        with (REPO / 'Cargo.toml').open('rb') as source:
+            version = tomllib.load(source)['package']['version']
+        result = subprocess.run([sys.executable, str(REPO / 'scripts/package-macos.py'),
+                                 '--binary', str(self.binary), '--native-prefix', str(self.prefix),
+                                 '--revision', REVISION, '--output', str(self.output)],
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        archive = next(self.output.glob('*.tar.gz'))
+        with tarfile.open(archive) as tar:
+            root = tar.getnames()[0]
+            metadata = json.load(tar.extractfile(root + '/release.json'))
+            self.assertEqual(metadata['version'], version)
+            self.assertIn(f'curl-impersonate {version}',
+                          tar.extractfile(root + '/README.md').read().decode())
+
     def test_rejects_intel_library(self):
         self.run_command('clang', '-arch', 'x86_64', '-dynamiclib', str(self.root / 'lib.c'),
                          '-Wl,-install_name,@rpath/' + LIBRARY, '-o', str(self.library))
