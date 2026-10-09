@@ -82,7 +82,7 @@ jobs:
       - name: Prepare Apple Silicon build and test tools
         run: |
           test "$(uname -m)" = arm64
-          brew install cmake ninja nghttp2 openssl@3
+          brew install cmake ninja go nghttp2 openssl@3
           rustup toolchain install "$RUSTUP_TOOLCHAIN" --profile minimal
           echo "$(brew --prefix openssl@3)/bin" >> "$GITHUB_PATH"
           echo "$(brew --prefix nghttp2)/bin" >> "$GITHUB_PATH"
