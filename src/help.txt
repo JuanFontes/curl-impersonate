@@ -1,6 +1,7 @@
 curl-impersonate-rs v0 — Rust CLI using libcurl-impersonate directly
 Usage: curl-impersonate [options] <URL>
 Browser impersonation is enabled by default with chrome150.
+Response decompression is automatic while a profile is active.
 
 Requests:
   -X, --request METHOD          Custom HTTP method
@@ -23,7 +24,8 @@ Transport:
       --list-profiles          List profiles validated against the loaded engine
   -L, --location               Follow redirects (default limit: 50)
       --max-redirs N           Redirect limit; -1 for unlimited
-      --compressed             Request and decode compressed responses
+      --compressed             Request and decode compressed responses (profile default)
+      --no-compressed          Return encoded response bytes without decompression
   -x, --proxy URL              HTTP/SOCKS proxy
   -U, --proxy-user USER:PASS    Proxy credentials
       --noproxy HOSTS          Comma-separated proxy bypass list
@@ -57,5 +59,7 @@ Profile priority: last --impersonate/--no-impersonate flag, CURL_IMPERSONATE,
 then chrome150. The default is pinned to the release, not updated at runtime.
 CURL_IMPERSONATE_HEADERS=no disables headers for an environment/default profile;
 explicit --impersonate uses its :yes/:no suffix (headers enabled if omitted).
+Compression priority: last --compressed/--no-compressed flag, then profile default.
+With --no-impersonate, decoding is opt-in via --compressed.
 Unknown flags and write-out variables fail explicitly.
 Request bodies are buffered; response bodies stream without text conversion.

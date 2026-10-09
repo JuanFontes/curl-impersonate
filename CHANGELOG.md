@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.1 — 2026-10-09
+
+### Fixed
+
+- Automatically decode compressed HTTP responses whenever an impersonation profile is active, including the default profile and environment-selected profiles.
+- Preserve explicit `--compressed` and `--no-compressed` choices; the last compression flag wins. Without impersonation, decompression remains opt-in.
+- Simplify the documented `curli` alias and request examples: no compression flag is needed for normal browser-profile requests.
+
+### Compatibility
+
+Use `--no-compressed` if a script needs the encoded response bytes returned by earlier versions. Existing `--compressed` commands continue to work. Suppressing profile headers with `:no` or `CURL_IMPERSONATE_HEADERS=no` does not disable decoding. Response headers retain their received values, and binary response bodies are not converted to text.
+
+The native engine, profile definitions, supported platforms, and documented curl option subset are unchanged. Regression checks cover decoding, opt-out, profile selection, header preservation, and file output.
+
 ## 0.1.0 — 2026-10-09
 
 First public release of the Rust CLI backed by the bundled libcurl-impersonate engine.

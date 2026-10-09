@@ -14,6 +14,7 @@ import tempfile
 import threading
 import time
 import unittest
+import zlib
 
 CLI = os.environ.get("CLI", str(Path(__file__).resolve().parents[1] / "target/debug/curl-impersonate"))
 CURL = os.environ.get("REFERENCE_CURL", "curl")
@@ -58,8 +59,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
         elif self.path == "/empty":
             code, payload = 204, b""
         elif self.path == "/gzip":
-            payload = gzip.compress(BINARY)
+            payload = gzip.compress(BINARY, mtime=0)
             headers.append(("Content-Encoding", "gzip"))
+        elif self.path == "/deflate":
+            payload = zlib.compress(BINARY)
+            headers.append(("Content-Encoding", "deflate"))
+        elif self.path == "/profile-headers":
+            payload = json.dumps(list(self.headers.items())).encode()
         elif self.path == "/redirect":
             code, payload = 302, b"redirect body"
             headers.append(("Location", "/bytes"))
@@ -267,15 +273,63 @@ class Compatibility(unittest.TestCase):
         self.assertIn("Chrome/150.0.0.0", headers.get("user-agent", ""))
         self.assertIn('"Chromium";v="150"', headers.get("sec-ch-ua", ""))
         self.assertEqual(self.run_cli([self.url + "/bytes"]).stdout, BINARY)
-        compressed = self.run_cli([self.url + "/gzip"])
-        self.assertEqual(compressed.returncode, 0, compressed.stderr)
-        self.assertEqual(gzip.decompress(compressed.stdout), BINARY)
-        decoded = self.run_cli(["--compressed", self.url + "/gzip"])
-        self.assertEqual(decoded.returncode, 0, decoded.stderr)
-        self.assertEqual(decoded.stdout, BINARY)
         headers = self.profile_headers(["-H", "Accept: application/json", "-A", "custom-agent"])
         self.assertEqual(headers["accept"], "application/json")
         self.assertEqual(headers["user-agent"], "custom-agent")
+
+    def test_profile_decompression_defaults_and_overrides(self):
+        cases = [
+            ([], {}, True),
+            (["--impersonate", "firefox147"], {}, True),
+            (["--impersonate", "safari2601"], {}, True),
+            ([], {"CURL_IMPERSONATE": "firefox147"}, True),
+            ([], {"CURL_IMPERSONATE_HEADERS": "no"}, True),
+            (["--impersonate", "chrome150:no"], {}, True),
+            (["--no-compressed"], {}, False),
+            (["--compressed"], {}, True),
+            (["--compressed", "--no-compressed"], {}, False),
+            (["--no-compressed", "--compressed"], {}, True),
+            (["--no-impersonate"], {}, False),
+            (["--no-impersonate", "--compressed"], {}, True),
+            (["--compressed", "--no-impersonate"], {}, True),
+            (["--no-impersonate", "--impersonate", "chrome150"], {}, True),
+            (["--impersonate", "firefox147", "--no-impersonate"], {}, False),
+            (["--no-compressed", "--impersonate", "firefox147"], {}, False),
+            (["--no-impersonate"], {"CURL_IMPERSONATE": "invalid-profile"}, False),
+        ]
+        for encoding, decompress in [("gzip", gzip.decompress), ("deflate", zlib.decompress)]:
+            for flags, environment, decoded in cases:
+                with self.subTest(encoding=encoding, flags=flags, environment=environment):
+                    result = self.run_cli([*flags, self.url + "/" + encoding], environment=environment)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(result.stdout if decoded else decompress(result.stdout), BINARY)
+
+    def test_decompression_preserves_profile_and_custom_encoding_headers(self):
+        for profile in ("chrome150", "firefox147", "safari2601"):
+            for custom in ([], ["-H", "Accept-Encoding: gzip"], ["-H", "Accept-Encoding:"]):
+                with self.subTest(profile=profile, custom=custom):
+                    flags = ["--impersonate", profile, *custom]
+                    raw = self.run_cli([*flags, "--no-compressed", self.url + "/profile-headers"])
+                    decoded = self.run_cli([*flags, self.url + "/profile-headers"])
+                    self.assertEqual(raw.returncode, 0, raw.stderr)
+                    self.assertEqual(decoded.returncode, 0, decoded.stderr)
+                    self.assertEqual(json.loads(decoded.stdout), json.loads(raw.stdout))
+        result = self.run_cli(["-H", "Accept-Encoding: gzip", self.url + "/gzip"])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, BINARY)
+
+    def test_default_decompression_writes_binary_body_and_original_headers(self):
+        output = self.root / "decoded.bin"
+        headers = self.root / "encoded-headers.txt"
+        result = self.run_cli(["-o", str(output), "-D", str(headers),
+                               "-w", "%{http_code}", self.url + "/gzip"])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, b"200")
+        self.assertEqual(output.read_bytes(), BINARY)
+        self.assertIn("Content-Encoding: gzip", headers.read_text())
+        plain = self.run_cli([self.url + "/bytes"])
+        self.assertEqual(plain.returncode, 0, plain.stderr)
+        self.assertEqual(plain.stdout, BINARY)
 
     def test_profile_flags_override_environment_and_last_selection_wins(self):
         for environment in [{"CURL_IMPERSONATE": "firefox147"}, {"CURL_IMPERSONATE": "invalid-profile"}]:

@@ -287,6 +287,7 @@ pub fn run(config: &Config) -> Result<(), CliError> {
         handle.string("impersonate", profile)?;
     }
     let impersonating = config.impersonate.is_some();
+    let decompress = config.compressed.unwrap_or(impersonating);
     if !impersonating {
         handle.string("user_agent", "curl/8.22.0")?;
     }
@@ -299,7 +300,7 @@ pub fn run(config: &Config) -> Result<(), CliError> {
         ("verbose", i64::from(config.verbose)),
         ("verify_peer", i64::from(!config.insecure)),
         ("verify_host", if config.insecure { 0 } else { 2 }),
-        ("decode", i64::from(config.compressed)),
+        ("decode", i64::from(decompress)),
     ] {
         handle.number(name, value)?;
     }
@@ -340,7 +341,7 @@ pub fn run(config: &Config) -> Result<(), CliError> {
             handle.string("ca_path", &path)?;
         }
     }
-    if config.compressed {
+    if decompress {
         handle.string("encoding", "")?;
     }
     let mut cookie_values = Vec::new();

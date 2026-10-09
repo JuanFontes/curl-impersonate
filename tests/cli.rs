@@ -81,3 +81,19 @@ fn informational_commands_do_not_require_a_url() {
         Action::Profiles
     );
 }
+
+#[test]
+fn compression_flags_preserve_explicit_selection_and_last_value() {
+    let url = "https://httpbin.org/gzip";
+    assert_eq!(transfer(&[url]).compressed, None);
+    assert_eq!(transfer(&["--compressed", url]).compressed, Some(true));
+    assert_eq!(transfer(&["--no-compressed", url]).compressed, Some(false));
+    assert_eq!(
+        transfer(&["--compressed", "--no-compressed", url]).compressed,
+        Some(false)
+    );
+    assert_eq!(
+        transfer(&["--no-compressed", "--compressed", url]).compressed,
+        Some(true)
+    );
+}

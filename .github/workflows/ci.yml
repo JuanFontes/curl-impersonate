@@ -64,7 +64,7 @@ jobs:
           test "$(printf '%s\n' "$version_output" | head -n 1)" = "curl-impersonate-rs $RELEASE_VERSION"
           REQUIRE_HTTP2=1 python3 tests/compat.py
           python3 tests/release_tls.py
-          "$CLI" --compressed -sS --fail \
+          "$CLI" -sS --fail \
             --connect-timeout 10 --max-time 30 -o /dev/null https://httpbin.org/status/200
       - name: Upload tested release bundle
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -122,7 +122,7 @@ jobs:
           codesign --verify --strict "$CLI"
           REQUIRE_HTTP2=1 python3 tests/compat.py
           python3 tests/release_tls.py
-          "$CLI" --compressed -sS --fail \
+          "$CLI" -sS --fail \
             --connect-timeout 10 --max-time 30 -o /dev/null https://httpbin.org/status/200
       - name: Upload tested macOS bundle
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

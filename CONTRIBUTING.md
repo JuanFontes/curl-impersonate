@@ -113,7 +113,7 @@ export CLI="$PWD/dist/release/$bundle/curl-impersonate"
 export PATH="$(brew --prefix openssl@3)/bin:$(brew --prefix nghttp2)/bin:$PATH"
 REQUIRE_HTTP2=1 python3 tests/compat.py
 python3 tests/release_tls.py
-"$CLI" --compressed -sS --fail \
+"$CLI" -sS --fail \
   --connect-timeout 10 --max-time 30 -o /dev/null https://httpbin.org/status/200
 ```
 
@@ -144,7 +144,7 @@ Source builds download pinned dependency archives and use container registries a
 
 ### Validation scope
 
-`test-minimal` runs source integrity checks, parser tests, and local HTTP/TLS/HTTP2 integration tests, then repeats the integration tests inside the assembled runtime filesystem with `chroot`. Test tools stay outside the final image. The suite checks all 39 profile names against the compiled engine, the default Chrome profile, explicit/environment precedence, and `--no-impersonate`. Curl-default comparisons explicitly disable impersonation; default-browser requests are checked separately, including HTTP2. It does not compare browser fingerprints or establish HTTP/3 fidelity. Compatibility assertions use local fixtures; the download workflow also runs one bounded public HTTPS smoke check.
+`test-minimal` runs source integrity checks, parser tests, and local HTTP/TLS/HTTP2 integration tests, then repeats the integration tests inside the assembled runtime filesystem with `chroot`. Test tools stay outside the final image. The suite checks all 39 profile names against the compiled engine, the default Chrome profile, explicit/environment precedence, and `--no-impersonate`. Compression checks cover automatic gzip/deflate decoding, explicit overrides, header order and values, binary output, and opt-in decoding without a profile. Curl-default comparisons explicitly disable impersonation; default-browser requests are checked separately, including HTTP2. It does not compare browser fingerprints or establish HTTP/3 fidelity. Compatibility assertions use local fixtures; the download workflow also runs one bounded public HTTPS smoke check.
 
 ## Validate your change
 
