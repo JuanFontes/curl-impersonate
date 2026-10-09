@@ -2,7 +2,7 @@
 
 <h1>🦎 curl-impersonate-rs</h1>
 
-<p><strong>Browser profiles. curl-style commands. Docker and Linux downloads.</strong></p>
+<p><strong>Browser profiles. curl-style commands. Docker, Linux, and Apple Silicon downloads.</strong></p>
 
 <p>Explore HTTP responses with browser-specific TLS and HTTP settings,<br>right from your terminal and scripts.</p>
 
@@ -14,15 +14,18 @@
 </p>
 
 <p>
-  <a href="https://hub.docker.com/r/juanfontes/curl-impersonate/tags?name=0.0.1-rc.1"><img src="https://img.shields.io/badge/Release-0.0.1--rc.1-D97706?style=flat-square" alt="Release 0.0.1-rc.1"></a>
+  <a href="https://hub.docker.com/r/juanfontes/curl-impersonate/tags?name=0.0.1-rc.2"><img src="https://img.shields.io/badge/Release-0.0.1--rc.2-D97706?style=flat-square" alt="Release 0.0.1-rc.2"></a>
   <img src="https://img.shields.io/badge/Profiles-39-0F766E?style=flat-square" alt="39 browser and client profiles">
   <img src="https://img.shields.io/badge/Linux-amd64_%7C_arm64-334155?style=flat-square&amp;logo=linux&amp;logoColor=white" alt="Linux amd64 and arm64">
+  <a href="#macos-downloads"><img src="https://img.shields.io/badge/macOS-Apple_Silicon-334155?style=flat-square&amp;logo=apple&amp;logoColor=white" alt="macOS Apple Silicon"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-0F766E?style=flat-square" alt="MIT license"></a>
 </p>
 
 <p>
   <a href="#use-the-published-docker-image">🚀 Quick start</a> ·
-  <a href="#linux-downloads">📦 Linux downloads</a> ·
+  <a href="#platform-support">💻 Platforms</a> ·
+  <a href="#linux-downloads">📦 Linux</a> ·
+  <a href="#macos-downloads">🍎 macOS</a> ·
   <a href="#browser-profiles">🌐 Profiles</a> ·
   <a href="#http-examples">🧰 Examples</a> ·
   <a href="#current-compatibility">🧭 Compatibility</a> ·
@@ -37,13 +40,13 @@
 
 ## 🚀 Quick start — use the published image
 
-The ready-to-use image is public on [Docker Hub](https://hub.docker.com/r/juanfontes/curl-impersonate): **`juanfontes/curl-impersonate:0.0.1-rc.1`**. You only need Docker with Linux container support. No repository checkout, Rust/C toolchain, or `docker build` is required.
+The ready-to-use image is public on [Docker Hub](https://hub.docker.com/r/juanfontes/curl-impersonate): **`juanfontes/curl-impersonate:0.0.1-rc.2`**. You only need Docker with Linux container support. No repository checkout, Rust/C toolchain, or `docker build` is required.
 
 ### Your first request
 
 ```sh
 # Send a request with the Chrome 150 profile and print the response body.
-docker run --rm juanfontes/curl-impersonate:0.0.1-rc.1 \
+docker run --rm juanfontes/curl-impersonate:0.0.1-rc.2 \
   --impersonate chrome150 --compressed -sS https://httpbin.org/get
 ```
 
@@ -54,23 +57,41 @@ The same tag includes **Linux amd64 and arm64**; Docker selects the matching arc
 ### Explore the CLI
 
 ```sh
-docker run --rm juanfontes/curl-impersonate:0.0.1-rc.1 --version
-docker run --rm juanfontes/curl-impersonate:0.0.1-rc.1 --help
-docker run --rm juanfontes/curl-impersonate:0.0.1-rc.1 --list-profiles
+docker run --rm juanfontes/curl-impersonate:0.0.1-rc.2 --version
+docker run --rm juanfontes/curl-impersonate:0.0.1-rc.2 --help
+docker run --rm juanfontes/curl-impersonate:0.0.1-rc.2 --list-profiles
 ```
 
 The image includes the CLI, native engine, shared libraries, and CA certificates. The [HTTP examples](#http-examples) below all use this published image, including headers, body output, authentication, redirects, and saving files.
+
+<a id="platform-support"></a>
+
+## 💻 Platform support
+
+Native downloads run directly on your operating system. Docker runs the Linux version and requires Linux container support on the host.
+
+| Operating system | CPU | Native download | Validation / status |
+| --- | --- | :---: | --- |
+| Linux | x86-64 / amd64 | ✅ | Ubuntu 24.04 CI |
+| Linux | ARM64 / aarch64 | ✅ | Ubuntu 24.04 ARM CI |
+| macOS — Apple Silicon (M1 and newer) | ARM64 | ✅ | Experimental; macOS 15 CI and local M1 Pro on macOS 27.2 |
+| macOS — Intel | x86-64 | ⬜ | No native package yet |
+| Windows | x86-64 / ARM64 | ⬜ | No native package yet |
+
+Docker images are available for **Linux amd64 and arm64**. Windows and Intel Mac users can use them with a suitable Docker installation. A browser profile's platform describes the client being impersonated, independently of your host OS.
+
+The macOS package is signed ad hoc and **not notarized**. Its deployment target is macOS 13.0, but older macOS versions have not been validated. Availability does not imply full curl flag compatibility or verified equivalence to real-browser fingerprints; see [current limits](#current-compatibility).
 
 <a id="linux-downloads"></a>
 
 ## 📦 Linux downloads — no Docker required
 
-Download a bundle from [GitHub Releases](https://github.com/JuanFontes/curl-impersonate/releases/tag/v0.0.1-rc.1):
+Download a bundle from [GitHub Releases](https://github.com/JuanFontes/curl-impersonate/releases/tag/v0.0.1-rc.2):
 
 | Your Linux CPU (`uname -m`) | Package |
 | --- | --- |
-| `x86_64` | `curl-impersonate-0.0.1-rc.1-linux-amd64.tar.gz` |
-| `aarch64` | `curl-impersonate-0.0.1-rc.1-linux-arm64.tar.gz` |
+| `x86_64` | `curl-impersonate-0.0.1-rc.2-linux-amd64.tar.gz` |
+| `aarch64` | `curl-impersonate-0.0.1-rc.2-linux-arm64.tar.gz` |
 
 Each archive includes the CLI, native engine, glibc loader, shared libraries, CA certificates, and licenses. **Extract the entire folder and keep it together.** The top-level `curl-impersonate` launcher locates its bundled runtime; copying just the inner ELF executable will not work as a standalone installation.
 
@@ -79,26 +100,50 @@ Download your archive and `SHA256SUMS` from the release page, then run the follo
 ```sh
 set -e
 arch=amd64
-bundle="curl-impersonate-0.0.1-rc.1-linux-$arch"
+bundle="curl-impersonate-0.0.1-rc.2-linux-$arch"
 sha256sum --check --ignore-missing SHA256SUMS
 tar -xzf "$bundle.tar.gz"
 "./$bundle/curl-impersonate" --version
 "./$bundle/curl-impersonate" --impersonate firefox147 --compressed -sS https://httpbin.org/get
 ```
 
-Downloads follow the GitHub repository's visibility; private repositories require authenticated access. Checksums detect corrupted downloads; these assets are not yet signed.
+Downloads follow the GitHub repository's visibility; private repositories require authenticated access. Checksums detect corrupted downloads; release checksums are not cryptographically signed.
 
-No compiler, Docker daemon, or root access is required to run the bundle. It needs Linux, `/bin/sh`, and standard utilities including `readlink -f`. Native CI tests Ubuntu 24.04 on both architectures. These are bundles of dynamic libraries, not universal static binaries; macOS and Windows native packages are not available yet. Paths with spaces are supported; package paths containing `:` or `;` are not.
+No compiler, Docker daemon, or root access is required to run the bundle. It needs Linux, `/bin/sh`, and standard utilities including `readlink -f`. Native CI tests Ubuntu 24.04 on both architectures. These are bundles of dynamic libraries, not universal static binaries. Use the separate [Apple Silicon package](#macos-downloads) on macOS. Paths with spaces are supported; package paths containing `:` or `;` are not.
 
 For an optional PATH installation, move the complete folder to a permanent location and symlink its launcher into `~/.local/bin`. Keep the runtime beside the launcher. Bundled certificates are the default; `--cacert`, `CURL_CA_BUNDLE`, `SSL_CERT_FILE`, and `SSL_CERT_DIR` allow custom trust settings. Update the bundle to refresh its libraries and certificates.
 
-The same [profiles](#browser-profiles), flags, and [compatibility limits](#current-compatibility) apply to Docker and Linux bundles. For the Docker examples below, replace `docker run --rm juanfontes/curl-impersonate:0.0.1-rc.1` with the path to your launcher.
+The same [profiles](#browser-profiles), flags, and [compatibility limits](#current-compatibility) apply to Docker and native bundles. For the Docker examples below, replace `docker run --rm juanfontes/curl-impersonate:0.0.1-rc.2` with the path to your launcher.
+
+<a id="macos-downloads"></a>
+
+## 🍎 macOS Apple Silicon — no Docker required
+
+On an **M1, M2, M3, or newer Apple Silicon Mac**, download `curl-impersonate-0.0.1-rc.2-macos-arm64.tar.gz` and `SHA256SUMS` from [GitHub Releases](https://github.com/JuanFontes/curl-impersonate/releases/tag/v0.0.1-rc.2). Private repository downloads require login.
+
+Run these commands in the download directory:
+
+```sh
+set -e
+bundle=curl-impersonate-0.0.1-rc.2-macos-arm64
+awk -v file="$bundle.tar.gz" '$2 == file' SHA256SUMS | shasum -a 256 --check
+tar -xzf "$bundle.tar.gz"
+"./$bundle/curl-impersonate" --version
+"./$bundle/curl-impersonate" --impersonate safari2601 --compressed -sS https://httpbin.org/get
+"./$bundle/curl-impersonate" --impersonate chrome150 -sS -o /dev/null -w '%{http_code}\n' https://httpbin.org/status/200
+```
+
+**Keep the entire extracted folder together.** The executable loads its engine from `lib/`; no Homebrew packages, compiler, or system-wide engine installation are required at runtime. This is a native ARM64 package, not an Intel Mac binary.
+
+This experimental RC is **signed ad hoc, not with an Apple Developer ID, and not notarized**. macOS may block an internet download. After verifying the checksum and trusting the release, follow [Apple's instructions for approving a specific app](https://support.apple.com/en-us/102445) if macOS offers **System Settings → Privacy & Security → Open Anyway**. Building from source is also supported in [CONTRIBUTING.md](CONTRIBUTING.md#build-on-macos-apple-silicon).
+
+TLS verification is enabled. The engine includes Apple SecTrust support and is configured with `/etc/ssl/cert.pem`; `--cacert`, `CURL_CA_BUNDLE`, `SSL_CERT_FILE`, and `SSL_CERT_DIR` support custom trust settings. Package validation covers relocation, signatures, local HTTP/TLS/HTTP2 transfers, certificate overrides, and a public HTTPS request. It does not establish browser fingerprint equivalence.
 
 <a id="browser-profiles"></a>
 
 ## 🌐 Browser profiles
 
-Pick a browser family, copy a profile ID, and pass it to `--impersonate`. Release `0.0.1-rc.1` includes **39 profiles** across desktop browsers, mobile browsers, and HTTP clients.
+Pick a browser family, copy a profile ID, and pass it to `--impersonate`. Release `0.0.1-rc.2` includes **39 profiles** across desktop browsers, mobile browsers, and HTTP clients.
 
 | Browser or client | Target | Profile IDs |
 | --- | --- | --- |
@@ -111,7 +156,7 @@ Pick a browser family, copy a profile ID, and pass it to `--impersonate`. Releas
 | Tor Browser | 🖥️ Desktop | `tor145` |
 | OkHttp | 🤖 Android client | `okhttp4_android` |
 
-These are versioned presets, not an automatically updated list of current browser releases. For example, `safari2601` targets Safari 26.0.1 and `tor145` targets Tor Browser 14.5. Selecting a Tor Browser profile does not route traffic through Tor. The target describes the impersonated client; any listed profile can be selected in either the Linux amd64 or arm64 image.
+These are versioned presets, not an automatically updated list of current browser releases. For example, `safari2601` targets Safari 26.0.1 and `tor145` targets Tor Browser 14.5. Selecting a Tor Browser profile does not route traffic through Tor. The target describes the impersonated client; any listed profile can be selected in each published image or native bundle.
 
 > **Preset note:** `okhttp4_android` is an HTTP client profile, and its bundled default headers include a desktop Safari User-Agent. Inspect or override those headers before using it; its presence in the catalog does not establish OkHttp fingerprint fidelity.
 
@@ -121,19 +166,19 @@ Run `--list-profiles` to check the IDs accepted by your installed engine. The [C
 
 ```sh
 # Firefox desktop.
-docker run --rm juanfontes/curl-impersonate:0.0.1-rc.1 \
+docker run --rm juanfontes/curl-impersonate:0.0.1-rc.2 \
   --impersonate firefox147 --compressed -sS https://httpbin.org/user-agent
 
 # Safari desktop.
-docker run --rm juanfontes/curl-impersonate:0.0.1-rc.1 \
+docker run --rm juanfontes/curl-impersonate:0.0.1-rc.2 \
   --impersonate safari2601 --compressed -sS https://httpbin.org/user-agent
 
 # Chrome on Android.
-docker run --rm juanfontes/curl-impersonate:0.0.1-rc.1 \
+docker run --rm juanfontes/curl-impersonate:0.0.1-rc.2 \
   --impersonate chrome131_android --compressed -sS https://httpbin.org/headers
 
 # Safari on iOS.
-docker run --rm juanfontes/curl-impersonate:0.0.1-rc.1 \
+docker run --rm juanfontes/curl-impersonate:0.0.1-rc.2 \
   --impersonate safari260_ios --compressed -sS https://httpbin.org/headers
 ```
 
@@ -145,14 +190,14 @@ Pass `CURL_IMPERSONATE` into the container to select a profile through the envir
 
 ```sh
 docker run --rm -e CURL_IMPERSONATE=firefox147 \
-  juanfontes/curl-impersonate:0.0.1-rc.1 \
+  juanfontes/curl-impersonate:0.0.1-rc.2 \
   --compressed -sS https://httpbin.org/headers
 ```
 
 Profiles include browser headers by default. Use `:no` to keep the profile's TLS/HTTP settings while disabling its default headers; `:yes` explicitly enables them:
 
 ```sh
-docker run --rm juanfontes/curl-impersonate:0.0.1-rc.1 \
+docker run --rm juanfontes/curl-impersonate:0.0.1-rc.2 \
   --impersonate chrome150:no --compressed -sS \
   -H 'Accept: application/json' -H 'X-Test: custom-headers' \
   https://httpbin.org/headers
@@ -182,14 +227,14 @@ Find the recipe you need:
 Discard the body with `-o /dev/null`, use `-sS` for silent mode with errors still shown, and print the status with `-w`:
 
 ```sh
-docker run --rm juanfontes/curl-impersonate:0.0.1-rc.1 \
+docker run --rm juanfontes/curl-impersonate:0.0.1-rc.2 \
   --impersonate chrome150 --compressed -sS -o /dev/null \
   -w '%{http_code}\n' https://httpbin.org/status/200
 
-docker run --rm juanfontes/curl-impersonate:0.0.1-rc.1 \
+docker run --rm juanfontes/curl-impersonate:0.0.1-rc.2 \
   -sS -o /dev/null -w '%{http_code}\n' https://httpbin.org/status/301
 
-docker run --rm juanfontes/curl-impersonate:0.0.1-rc.1 \
+docker run --rm juanfontes/curl-impersonate:0.0.1-rc.2 \
   -sS -o /dev/null -w '%{http_code}\n' https://httpbin.org/status/502
 ```
 
@@ -200,14 +245,14 @@ Without `-L`, the redirect response is returned directly. HTTP 4xx/5xx responses
 `-I` sends a **HEAD request**, which asks for headers without a response body:
 
 ```sh
-docker run --rm juanfontes/curl-impersonate:0.0.1-rc.1 \
+docker run --rm juanfontes/curl-impersonate:0.0.1-rc.2 \
   -sS -I https://httpbin.org/status/200
 ```
 
 To inspect the headers of a **GET request**, keep the default method, send headers to stdout with `-D -`, and discard the body:
 
 ```sh
-docker run --rm juanfontes/curl-impersonate:0.0.1-rc.1 \
+docker run --rm juanfontes/curl-impersonate:0.0.1-rc.2 \
   -sS -D - -o /dev/null https://httpbin.org/get
 ```
 
@@ -217,18 +262,18 @@ The response body is the default output. `/get` returns JSON; `/status/200` can 
 
 ```sh
 # Body only.
-docker run --rm juanfontes/curl-impersonate:0.0.1-rc.1 \
+docker run --rm juanfontes/curl-impersonate:0.0.1-rc.2 \
   --impersonate chrome150 --compressed -sS https://httpbin.org/get
 
 # Response headers followed by the body.
-docker run --rm juanfontes/curl-impersonate:0.0.1-rc.1 \
+docker run --rm juanfontes/curl-impersonate:0.0.1-rc.2 \
   -sS -i https://httpbin.org/get
 ```
 
 Save headers and body separately to your current host directory:
 
 ```sh
-docker run --rm -v "$PWD:/work" juanfontes/curl-impersonate:0.0.1-rc.1 \
+docker run --rm -v "$PWD:/work" juanfontes/curl-impersonate:0.0.1-rc.2 \
   -sS -D response.headers -o response.json \
   -w 'HTTP %{http_code}\n' https://httpbin.org/get
 ```
@@ -240,7 +285,7 @@ Container file paths are relative to `/work`. Mount a writable directory when sa
 Follow a redirect and print the final URL and status after the body:
 
 ```sh
-docker run --rm juanfontes/curl-impersonate:0.0.1-rc.1 \
+docker run --rm juanfontes/curl-impersonate:0.0.1-rc.2 \
   -sS -L --max-redirs 5 \
   -w '\nFinal: %{url_effective} — HTTP %{http_code}\n' \
   https://httpbin.org/status/301
@@ -249,11 +294,11 @@ docker run --rm juanfontes/curl-impersonate:0.0.1-rc.1 \
 Use `--fail-with-body` to return process exit code 22 on HTTP errors while retaining any body supplied by the server. `-f` also returns 22 but suppresses the error body:
 
 ```sh
-docker run --rm juanfontes/curl-impersonate:0.0.1-rc.1 \
+docker run --rm juanfontes/curl-impersonate:0.0.1-rc.2 \
   -sS --fail-with-body -w '\nHTTP %{http_code}; exit %{exitcode}\n' \
   https://httpbin.org/status/502
 
-docker run --rm juanfontes/curl-impersonate:0.0.1-rc.1 \
+docker run --rm juanfontes/curl-impersonate:0.0.1-rc.2 \
   -sS -f https://httpbin.org/status/502
 ```
 
@@ -262,20 +307,20 @@ These two examples intentionally fail when the server returns 502. That exit cod
 ### Send headers, credentials, and JSON
 
 ```sh
-docker run --rm juanfontes/curl-impersonate:0.0.1-rc.1 \
+docker run --rm juanfontes/curl-impersonate:0.0.1-rc.2 \
   -sS -H 'X-Test: hello' https://httpbin.org/headers
 
-docker run --rm juanfontes/curl-impersonate:0.0.1-rc.1 \
+docker run --rm juanfontes/curl-impersonate:0.0.1-rc.2 \
   -sS -u demo:demo https://httpbin.org/basic-auth/demo/demo
 
-printf '{"hello":"world"}' | docker run --rm -i juanfontes/curl-impersonate:0.0.1-rc.1 \
+printf '{"hello":"world"}' | docker run --rm -i juanfontes/curl-impersonate:0.0.1-rc.2 \
   -sS --json @- https://httpbin.org/post
 ```
 
 ### Diagnose a request and limit waiting time
 
 ```sh
-docker run --rm juanfontes/curl-impersonate:0.0.1-rc.1 \
+docker run --rm juanfontes/curl-impersonate:0.0.1-rc.2 \
   --impersonate chrome150 --compressed -v \
   --connect-timeout 5 --max-time 20 https://httpbin.org/get
 ```
@@ -323,7 +368,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for source builds, focused checks, runtim
 | `scripts/` | Source verification, compilation, and runtime packaging |
 | `tests/` | Parser, source-integrity, and HTTP/TLS compatibility checks |
 | `docker/` | Maintainer Dockerfile and its build-context exclusions |
-| `.github/workflows/` | CI for amd64 and arm64 |
+| `.github/workflows/` | Native CI for Linux amd64/arm64 and macOS Apple Silicon |
 | `Dockerfile` | Distribution image derived from a ready runtime |
 | `engine.lock` | Engine input pins |
 | `CONTRIBUTING.md` | Build, validation, maintenance, and contribution guide |
@@ -339,6 +384,8 @@ The next milestones focus on measurable fidelity and easier maintenance:
 - [ ] Compare network captures with real browsers.
 - [ ] Automate tested releases for amd64 and arm64.
 - [x] Publish Linux CLI bundles with checksums for amd64 and arm64.
+- [x] Package and test a native macOS Apple Silicon download.
+- [ ] Add Apple Developer ID signing and notarization.
 - [ ] Update browser catalogs and dependencies together.
 - [ ] Expand curl compatibility using representative scripts.
 - [ ] Validate HTTP/3 end to end.
@@ -347,6 +394,6 @@ The next milestones focus on measurable fidelity and easier maintenance:
 
 ## 📄 License
 
-Original code is MIT licensed under [LICENSE](LICENSE). [NOTICE](NOTICE) describes the incorporated components; the engine's original license remains in [vendor/curl-impersonate/LICENSE](vendor/curl-impersonate/LICENSE). Docker includes the collected native dependency notices at `/usr/share/licenses/curl-impersonate-rs/native/`. Linux bundles retain the same notices under `runtime/`. This is an independent project, not an official curl or upstream curl-impersonate release.
+Original code is MIT licensed under [LICENSE](LICENSE). [NOTICE](NOTICE) describes the incorporated components; the engine's original license remains in [vendor/curl-impersonate/LICENSE](vendor/curl-impersonate/LICENSE). Docker includes the collected native dependency notices at `/usr/share/licenses/curl-impersonate-rs/native/`. Linux bundles retain the same notices under `runtime/`; macOS bundles include them under `licenses/native/`. This is an independent project, not an official curl or upstream curl-impersonate release.
 
 <p align="center"><a href="#use-the-published-docker-image">↑ Back to quick start</a></p>
