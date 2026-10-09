@@ -54,6 +54,36 @@ docker run --rm juanfontes/curl-impersonate:0.1.0 \
 
 The same tag includes **Linux amd64 and arm64**; Docker selects the matching architecture automatically. This is the first public release. It supports one URL per invocation and a [documented subset of curl options](#current-compatibility).
 
+### A shorter command: `curli`
+
+Create an alias in Bash or Zsh to use the published image without typing the Docker command each time:
+
+```sh
+alias curli='docker run --rm -i juanfontes/curl-impersonate:0.1.0'
+```
+
+Then put your curl-style options and URL after `curli`:
+
+```sh
+# Get the response body with the default Chrome profile.
+curli --compressed -sS https://httpbin.org/get
+
+# Select Firefox and request only response headers.
+curli --impersonate firefox147 -sS -I https://httpbin.org/get
+
+# Print only the HTTP status code.
+curli -sS -o /dev/null -w '%{http_code}\n' https://httpbin.org/status/200
+
+# Show the available profiles.
+curli --list-profiles
+```
+
+Docker's `-i` forwards stdin, so piped input works too.
+
+To keep the shortcut across terminal sessions, add the `alias` line to `~/.zshrc` for Zsh (the default shell on macOS) or `~/.bashrc` for Bash, then open a new terminal. For Bash login shells, ensure `~/.bash_profile` sources `~/.bashrc`. This alias is intended for interactive terminals; use the full Docker command in scripts.
+
+File paths passed to options such as `-o response.json` or `--data-binary @payload.json` refer to the container. To use host files with those options, add an explicit Docker volume mount as shown in the [HTTP examples](#http-examples). Shell redirection and pipes work normally on the host.
+
 ### Explore the CLI
 
 ```sh
